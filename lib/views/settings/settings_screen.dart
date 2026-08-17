@@ -164,6 +164,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           settingsProvider.toggleNotifications(val);
                         },
                       ),
+                      ListTile(
+                        title: const Text('Display Over Other Apps'),
+                        subtitle: const Text('Grant permission to show alarm overlays'),
+                        trailing: const Icon(Icons.open_in_new_rounded, color: AppTheme.primaryColor),
+                        onTap: () async {
+                          await NotificationService.requestOverlayPermission();
+                        },
+                      ),
+
                     ],
                   ),
                 ),

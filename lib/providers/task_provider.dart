@@ -66,13 +66,14 @@ class TaskProvider extends ChangeNotifier {
       // Category Filter
       switch (_selectedCategory) {
         case TaskFilterCategory.today:
-          return task.dueDate == nowStr && task.status != TaskStatus.completed;
+          return task.dueDate == nowStr ||
+              (task.status == TaskStatus.completed && task.completedAt != null && task.completedAt!.startsWith(nowStr));
         case TaskFilterCategory.upcoming:
-          return task.dueDate.compareTo(nowStr) > 0 && task.status != TaskStatus.completed;
+          return task.dueDate.compareTo(nowStr) > 0;
         case TaskFilterCategory.overdue:
           return task.status == TaskStatus.overdue ||
-              (AppDateUtils.isOverdue(task.dueDate, task.dueTime, task.status == TaskStatus.completed) &&
-                  task.status != TaskStatus.completed);
+              AppDateUtils.isOverdue(task.dueDate, task.dueTime, false) ||
+              (task.status == TaskStatus.completed && task.dueDate.compareTo(nowStr) < 0);
         case TaskFilterCategory.completed:
           return task.status == TaskStatus.completed;
         case TaskFilterCategory.all:
@@ -215,7 +216,25 @@ class TaskProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> markReminderStatus(String taskId, String reminderId, ReminderStatus status) async {
+    final index = _tasks.indexWhere((t) => t.id == taskId);
+    if (index != -1) {
+      final task = _tasks[index];
+      final updatedReminders = task.reminders.map((r) {
+        if (r.id == reminderId) {
+          return r.copyWith(status: status);
+        }
+        return r;
+      }).toList();
+      final updatedTask = task.copyWith(reminders: updatedReminders);
+      _tasks[index] = updatedTask;
+      await HiveStorageService.saveTask(updatedTask);
+      notifyListeners();
+    }
+  }
+
   Future<void> replaceAllTasks(List<Task> newTasks) async {
+
     _tasks = List.from(newTasks);
     await HiveStorageService.saveAllTasks(_tasks);
     notifyListeners();

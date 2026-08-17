@@ -163,7 +163,6 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
                 controller: _titleController,
                 decoration: InputDecoration(
                   labelText: 'Task Title *',
-                  hintText: 'e.g. Complete Project Proposal',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                   prefixIcon: const Icon(Icons.task_alt_rounded),
                 ),
@@ -312,67 +311,40 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
               ),
               const SizedBox(height: 16),
 
-              // Simplified & Sleek Due Time Selector
+              // Clean & Modern Due Time Selector
               const Text('Due Time', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  // Digital Time Dial Button
-                  Expanded(
-                    child: InkWell(
-                      onTap: _pickTime,
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: isDark ? AppTheme.darkSurface : AppTheme.lightCard,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppTheme.primaryColor.withOpacity(0.3)),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.access_time_filled_rounded, color: AppTheme.primaryColor, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              _selectedTime.format(context),
-                              style: const TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.primaryColor,
-                              ),
-                            ),
-                          ],
+              InkWell(
+                onTap: _pickTime,
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppTheme.darkSurface : AppTheme.lightCard,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppTheme.primaryColor.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.access_time_filled_rounded, color: AppTheme.primaryColor, size: 20),
+                      const SizedBox(width: 10),
+                      Text(
+                        _selectedTime.format(context),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryColor,
                         ),
                       ),
-                    ),
+                      const Spacer(),
+                      TextButton.icon(
+                        onPressed: () => setState(() => _selectedTime = TimeOfDay.now()),
+                        icon: const Icon(Icons.av_timer_rounded, size: 18),
+                        label: const Text('Set to Now', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  // Quick Stepper Chips
-                  OutlinedButton(
-                    onPressed: () => _adjustTime(-15),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                    child: const Text('-15m', style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                  const SizedBox(width: 6),
-                  OutlinedButton(
-                    onPressed: () => _adjustTime(15),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                    child: const Text('+15m', style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                  const SizedBox(width: 6),
-                  IconButton.filledTonal(
-                    icon: const Icon(Icons.access_time_rounded, size: 20),
-                    tooltip: 'Set to Now',
-                    onPressed: () => setState(() => _selectedTime = TimeOfDay.now()),
-                  ),
-                ],
+                ),
               ),
               const SizedBox(height: 16),
 

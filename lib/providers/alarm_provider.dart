@@ -84,12 +84,16 @@ class AlarmProvider extends ChangeNotifier {
     _activeReminder = reminder;
     _activeHabit = null;
     _isRinging = true;
-    _remainingSeconds = settingsProvider.settings.alarmDurationSeconds;
+    _remainingSeconds = 30;
     _autoSnoozeCount = reminder.snoozeCount;
+
+    // Mark reminder as triggered in TaskProvider so 5-second check loop doesn't re-trigger it
+    taskProvider.markReminderStatus(task.id, reminder.id, ReminderStatus.triggered);
 
     AudioService.playAlarmTone(
       settingsProvider.settings.alarmTone,
       soundEnabled: settingsProvider.settings.soundEnabled,
+      maxDurationSeconds: 30,
     );
 
     _countdownTimer?.cancel();
@@ -115,7 +119,7 @@ class AlarmProvider extends ChangeNotifier {
     _activeReminder = null;
     _activeHabit = habit;
     _isRinging = true;
-    _remainingSeconds = settingsProvider.settings.alarmDurationSeconds;
+    _remainingSeconds = 30;
 
     // Update last fired date so it rings once per day
     final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
@@ -124,7 +128,9 @@ class AlarmProvider extends ChangeNotifier {
     AudioService.playAlarmTone(
       settingsProvider.settings.alarmTone,
       soundEnabled: settingsProvider.settings.soundEnabled,
+      maxDurationSeconds: 30,
     );
+
 
     _countdownTimer?.cancel();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -142,6 +148,9 @@ class AlarmProvider extends ChangeNotifier {
 
   Future<void> markCompleted(TaskProvider taskProvider, HabitProvider habitProvider) async {
     if (_activeTask != null) {
+      if (_activeReminder != null) {
+        await taskProvider.markReminderStatus(_activeTask!.id, _activeReminder!.id, ReminderStatus.completed);
+      }
       await taskProvider.toggleTaskStatus(_activeTask!.id, habitProvider: habitProvider);
     } else if (_activeHabit != null) {
       final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
@@ -152,22 +161,36 @@ class AlarmProvider extends ChangeNotifier {
 
   Future<void> snooze(int minutes, TaskProvider taskProvider) async {
     if (_activeTask != null) {
+      if (_activeReminder != null) {
+        await taskProvider.markReminderStatus(_activeTask!.id, _activeReminder!.id, ReminderStatus.snoozed);
+      }
       await taskProvider.snoozeTask(_activeTask!.id, minutes);
     }
     await stopAlarm();
   }
 
-  Future<void> dismiss() async {
+  Future<void> dismiss({TaskProvider? taskProvider}) async {
+    if (_activeTask != null && _activeReminder != null && taskProvider != null) {
+      await taskProvider.markReminderStatus(_activeTask!.id, _activeReminder!.id, ReminderStatus.expired);
+    }
     await stopAlarm();
   }
 
   Future<void> _handleAutoSnooze(TaskProvider taskProvider, SettingsProvider settingsProvider) async {
     final settings = settingsProvider.settings;
-    if (_activeTask != null && settings.autoSnoozeEnabled && _autoSnoozeCount < settings.maxAutoSnoozes) {
-      await taskProvider.snoozeTask(_activeTask!.id, settings.autoSnoozeInterval);
+    if (_activeTask != null) {
+      if (settings.autoSnoozeEnabled && _autoSnoozeCount < settings.maxAutoSnoozes) {
+        if (_activeReminder != null) {
+          await taskProvider.markReminderStatus(_activeTask!.id, _activeReminder!.id, ReminderStatus.snoozed);
+        }
+        await taskProvider.snoozeTask(_activeTask!.id, settings.autoSnoozeInterval);
+      } else if (_activeReminder != null) {
+        await taskProvider.markReminderStatus(_activeTask!.id, _activeReminder!.id, ReminderStatus.expired);
+      }
     }
     await stopAlarm();
   }
+
 
   Future<void> stopAlarm() async {
     await AudioService.stopAlarm();

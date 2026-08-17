@@ -1,6 +1,8 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+
 import '../models/task.dart' hide Priority;
 import '../models/reminder.dart';
 import '../models/habit.dart';
@@ -39,16 +41,35 @@ class NotificationService {
     );
   }
 
+  static const _overlayChannel = MethodChannel('com.example.day_flow/overlay_permission');
+
+  static Future<bool> checkOverlayPermission() async {
+    try {
+      final bool hasPermission = await _overlayChannel.invokeMethod('checkOverlayPermission');
+      return hasPermission;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  static Future<void> requestOverlayPermission() async {
+    try {
+      await _overlayChannel.invokeMethod('requestOverlayPermission');
+    } catch (_) {}
+  }
+
   static Future<bool> requestPermissions() async {
     final androidImpl = _notificationsPlugin
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     if (androidImpl != null) {
       final grantedNotif = await androidImpl.requestNotificationsPermission();
       final grantedExact = await androidImpl.requestExactAlarmsPermission();
+      await checkOverlayPermission();
       return (grantedNotif ?? false) && (grantedExact ?? false);
     }
     return true;
   }
+
 
   static Future<void> scheduleTaskReminder(Task task, Reminder reminder) async {
     try {
@@ -58,7 +79,7 @@ class NotificationService {
       final int notificationId = (task.id + reminder.id).hashCode.abs() % 100000;
 
       const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-        'day_flow_alarms_v2',
+        'day_flow_alarms_v4',
         'DAY FLOW Alarms & Reminders',
         channelDescription: 'High priority full-screen alarms & lockscreen notifications',
         importance: Importance.max,
@@ -104,9 +125,9 @@ class NotificationService {
       final int notificationId = ('habit_${habit.id}').hashCode.abs() % 100000;
 
       const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-        'day_flow_habits_v1',
+        'day_flow_habits_v3',
         'DAY FLOW Daily Habit Alarms',
-        channelDescription: 'High priority daily habit ringing alarms & reminders',
+        channelDescription: 'High priority daily habit full-screen alarms & reminders',
         importance: Importance.max,
         priority: Priority.max,
         playSound: true,
@@ -116,6 +137,8 @@ class NotificationService {
         visibility: NotificationVisibility.public,
         audioAttributesUsage: AudioAttributesUsage.alarm,
       );
+
+
 
       const NotificationDetails platformDetails = NotificationDetails(
         android: androidDetails,

@@ -209,7 +209,7 @@ class _AlarmDialogOverlayState extends State<AlarmDialogOverlay>
                                 Expanded(
                                   child: OutlinedButton.icon(
                                     onPressed: () {
-                                      alarmProvider.dismiss();
+                                      alarmProvider.dismiss(taskProvider: taskProvider);
                                     },
                                     style: OutlinedButton.styleFrom(
                                       foregroundColor: AppTheme.priorityHigh,

@@ -86,7 +86,7 @@ class AudioService {
     }
   }
 
-  static Future<void> playAlarmTone(AlarmTone tone, {bool soundEnabled = true}) async {
+  static Future<void> playAlarmTone(AlarmTone tone, {bool soundEnabled = true, int maxDurationSeconds = 30}) async {
     if (!soundEnabled) return;
     await stopAlarm();
     _isPlaying = true;
@@ -95,16 +95,25 @@ class AudioService {
       final bytes = getToneBytes(tone);
       await _audioPlayer.play(BytesSource(bytes));
 
+      final startTime = DateTime.now();
+
       _loopTimer?.cancel();
       _loopTimer = Timer.periodic(const Duration(milliseconds: 1800), (_) async {
-        if (_isPlaying) {
-          try {
-            await _audioPlayer.play(BytesSource(bytes));
-          } catch (_) {}
+        if (!_isPlaying) return;
+
+        final elapsed = DateTime.now().difference(startTime).inSeconds;
+        if (elapsed >= maxDurationSeconds) {
+          await stopAlarm();
+          return;
         }
+
+        try {
+          await _audioPlayer.play(BytesSource(bytes));
+        } catch (_) {}
       });
     } catch (_) {}
   }
+
 
   static Future<void> playTonePreview(AlarmTone tone) async {
     await stopAlarm();

@@ -66,7 +66,9 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
           children: [
             Icon(Icons.waving_hand_rounded, color: AppTheme.primaryColor),
             SizedBox(width: 10),
-            Text('Welcome to DAY FLOW!', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Expanded(
+              child: Text('Welcome to DAY FLOW!', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ),
           ],
         ),
         content: Column(

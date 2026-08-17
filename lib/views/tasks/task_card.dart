@@ -28,28 +28,31 @@ class TaskCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: isCompleted ? 0 : 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       color: isCompleted
-          ? (isDark ? AppTheme.darkSurface.withOpacity(0.6) : AppTheme.lightCard)
+          ? (isDark ? AppTheme.darkSurface.withOpacity(0.5) : AppTheme.lightCard.withOpacity(0.7))
           : (isDark ? AppTheme.darkSurface : AppTheme.lightSurface),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         onTap: () {
           _showEditDialog(context);
         },
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Checkbox
-              Transform.scale(
-                scale: 1.1,
+              SizedBox(
+                width: 32,
+                height: 32,
                 child: Checkbox(
                   value: isCompleted,
                   activeColor: AppTheme.secondaryColor,
+                  visualDensity: VisualDensity.compact,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(5),
                   ),
                   onChanged: (bool? value) {
                     final taskProvider = Provider.of<TaskProvider>(context, listen: false);
@@ -63,164 +66,127 @@ class TaskCard extends StatelessWidget {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
-                      children: [
-                        // Priority Dot
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: priorityColor,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        // Title
-                        Expanded(
-                          child: Text(
-                            task.title,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              decoration: isCompleted ? TextDecoration.lineThrough : null,
-                              color: isCompleted
-                                  ? (isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary)
-                                  : (isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary),
-                            ),
-                          ),
-                        ),
-                      ],
+                    Text(
+                      task.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        decoration: isCompleted ? TextDecoration.lineThrough : null,
+                        color: isCompleted
+                            ? (isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary)
+                            : priorityColor,
+                      ),
                     ),
                     if (task.description.isNotEmpty) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         task.description,
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 11,
                           color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
                         ),
                       ),
                     ],
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 4),
                     // Badges Row: Date/Time, Overdue Tag, Recurrence Tag
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
+                    Row(
                       children: [
-                        // Due Badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: isOverdue
-                                ? AppTheme.priorityHigh.withOpacity(0.15)
-                                : (isDark ? AppTheme.darkCard : AppTheme.lightCard),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.access_time_rounded,
-                                size: 14,
-                                color: isOverdue ? AppTheme.priorityHigh : AppTheme.primaryColor,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${AppDateUtils.formatRelativeDate(task.dueDate)} at ${AppDateUtils.formatDisplayTime(task.dueTime)}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: isOverdue ? AppTheme.priorityHigh : null,
-                                ),
-                              ),
-                            ],
+                        Icon(
+                          Icons.access_time_rounded,
+                          size: 12,
+                          color: isOverdue ? AppTheme.priorityHigh : AppTheme.primaryColor,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${AppDateUtils.formatRelativeDate(task.dueDate)} at ${AppDateUtils.formatDisplayTime(task.dueTime)}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: isOverdue ? AppTheme.priorityHigh : (isDark ? Colors.grey[400] : Colors.grey[700]),
                           ),
                         ),
-                        // Recurrence Tag
-                        if (task.recurrence.type != RecurrenceType.none)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryColor.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.repeat_rounded,
-                                  size: 13,
-                                  color: AppTheme.primaryColor,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  task.recurrence.label,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.primaryColor,
-                                  ),
-                                ),
-                              ],
+                        if (task.recurrence.type != RecurrenceType.none) ...[
+                          const SizedBox(width: 8),
+                          const Icon(
+                            Icons.repeat_rounded,
+                            size: 12,
+                            color: AppTheme.primaryColor,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            task.recurrence.label,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primaryColor,
                             ),
                           ),
+                        ],
                       ],
                     ),
                   ],
                 ),
               ),
-              // Context Popup Menu
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert_rounded),
-                onSelected: (value) {
-                  _handleMenuSelection(context, value);
-                },
-                itemBuilder: (ctx) => [
-                  const PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit_rounded, size: 18),
-                        SizedBox(width: 8),
-                        Text('Edit Task'),
-                      ],
+              // Context Popup Menu Button
+              SizedBox(
+                width: 30,
+                height: 30,
+                child: PopupMenuButton<String>(
+                  padding: EdgeInsets.zero,
+                  icon: const Icon(Icons.more_vert_rounded, size: 18),
+                  onSelected: (value) {
+                    _handleMenuSelection(context, value);
+                  },
+                  itemBuilder: (ctx) => [
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit_rounded, size: 16),
+                          SizedBox(width: 8),
+                          Text('Edit Task', style: TextStyle(fontSize: 13)),
+                        ],
+                      ),
                     ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'reschedule',
-                    child: Row(
-                      children: [
-                        Icon(Icons.calendar_today_rounded, size: 18),
-                        SizedBox(width: 8),
-                        Text('Reschedule Tomorrow'),
-                      ],
+                    const PopupMenuItem(
+                      value: 'reschedule',
+                      child: Row(
+                        children: [
+                          Icon(Icons.calendar_today_rounded, size: 16),
+                          SizedBox(width: 8),
+                          Text('Reschedule Tomorrow', style: TextStyle(fontSize: 13)),
+                        ],
+                      ),
                     ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'snooze',
-                    child: Row(
-                      children: [
-                        Icon(Icons.snooze_rounded, size: 18),
-                        SizedBox(width: 8),
-                        Text('Snooze 15 Min'),
-                      ],
+                    const PopupMenuItem(
+                      value: 'snooze',
+                      child: Row(
+                        children: [
+                          Icon(Icons.snooze_rounded, size: 16),
+                          SizedBox(width: 8),
+                          Text('Snooze 15 Min', style: TextStyle(fontSize: 13)),
+                        ],
+                      ),
                     ),
-                  ),
-                  const PopupMenuDivider(),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete_rounded, size: 18, color: AppTheme.priorityHigh),
-                        SizedBox(width: 8),
-                        Text('Delete', style: TextStyle(color: AppTheme.priorityHigh)),
-                      ],
+                    const PopupMenuDivider(),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_rounded, size: 16, color: AppTheme.priorityHigh),
+                          SizedBox(width: 8),
+                          Text('Delete', style: TextStyle(fontSize: 13, color: AppTheme.priorityHigh)),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),

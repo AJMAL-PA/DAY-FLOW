@@ -8,6 +8,7 @@ import 'providers/task_provider.dart';
 import 'providers/alarm_provider.dart';
 import 'utils/theme.dart';
 import 'views/navigation_wrapper.dart';
+import 'views/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,7 +40,7 @@ class DayFlowApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: settingsProvider.themeMode,
-            home: const NavigationWrapper(),
+            home: const SplashScreen(),
           );
         },
       ),
