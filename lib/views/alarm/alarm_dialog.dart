@@ -16,24 +16,29 @@ class AlarmDialogOverlay extends StatefulWidget {
 
 class _AlarmDialogOverlayState extends State<AlarmDialogOverlay>
     with SingleTickerProviderStateMixin {
-  late AnimationController _pulseController;
+  late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
+    _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    )..repeat(reverse: true);
-    _scaleAnimation = Tween<double>(begin: 0.92, end: 1.08).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+      duration: const Duration(milliseconds: 350),
     );
+    _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutBack),
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
+    );
+    _animationController.forward();
   }
 
   @override
   void dispose() {
-    _pulseController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -48,185 +53,202 @@ class _AlarmDialogOverlayState extends State<AlarmDialogOverlay>
         final isHabitAlarm = alarmProvider.activeHabit != null;
         final task = alarmProvider.activeTask;
         final habit = alarmProvider.activeHabit;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
 
         final taskProvider = Provider.of<TaskProvider>(context, listen: false);
         final habitProvider = Provider.of<HabitProvider>(context, listen: false);
 
+        final title = isHabitAlarm ? habit!.name : task!.title;
+        final description = isHabitAlarm
+            ? 'Goal: ${habit!.targetQuantity} (${habit.category})'
+            : (task!.description.isNotEmpty ? task.description : 'Due at ${AppDateUtils.formatDisplayTime(task.dueTime)}');
+
+        final priorityColor = !isHabitAlarm && task != null
+            ? (task.priority == Priority.high
+                ? AppTheme.priorityHigh
+                : task.priority == Priority.medium
+                    ? AppTheme.priorityMedium
+                    : AppTheme.priorityLow)
+            : AppTheme.secondaryColor;
+
         return Material(
-          color: Colors.black.withOpacity(0.85),
+          color: Colors.black.withOpacity(0.45),
           child: SafeArea(
             child: Center(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-                child: Card(
-                  elevation: 12,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(28.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Animated Ringing Bell / Icon
-                        ScaleTransition(
-                          scale: _scaleAnimation,
-                          child: Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: isHabitAlarm
-                                  ? AppTheme.secondaryColor.withOpacity(0.15)
-                                  : AppTheme.primaryColor.withOpacity(0.15),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              isHabitAlarm ? Icons.bolt_rounded : Icons.alarm_on_rounded,
-                              size: 64,
-                              color: isHabitAlarm ? AppTheme.secondaryColor : AppTheme.primaryColor,
-                            ),
-                          ),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: Card(
+                      elevation: 20,
+                      shadowColor: Colors.black.withOpacity(0.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        side: BorderSide(
+                          color: isHabitAlarm ? AppTheme.secondaryColor : AppTheme.primaryColor,
+                          width: 2,
                         ),
-                        const SizedBox(height: 20),
-                        Text(
-                          isHabitAlarm ? '⚡ DAILY HABIT ALARM' : 'ALARM RINGING',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 2,
-                            color: isHabitAlarm ? AppTheme.secondaryColor : AppTheme.primaryColor,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          isHabitAlarm ? habit!.name : task!.title,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                        const SizedBox(height: 8),
-                        if (isHabitAlarm)
-                          Text(
-                            'Category: ${habit!.category} • Goal: ${habit.targetQuantity}',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontWeight: FontWeight.w600, color: AppTheme.secondaryColor),
-                          )
-                        else if (task!.description.isNotEmpty)
-                          Text(
-                            task.description,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Theme.of(context).brightness == Brightness.dark
-                                  ? AppTheme.darkTextSecondary
-                                  : AppTheme.lightTextSecondary,
-                            ),
-                          ),
-                        const SizedBox(height: 16),
-                        if (!isHabitAlarm && task != null) ...[
-                          // Priority Badge & Due Time
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: task.priority == Priority.high
-                                      ? AppTheme.priorityHigh.withOpacity(0.2)
-                                      : task.priority == Priority.medium
-                                          ? AppTheme.priorityMedium.withOpacity(0.2)
-                                          : AppTheme.priorityLow.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  task.priority.name.toUpperCase(),
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: task.priority == Priority.high
-                                        ? AppTheme.priorityHigh
-                                        : task.priority == Priority.medium
-                                            ? AppTheme.priorityMedium
-                                            : AppTheme.priorityLow,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Due: ${AppDateUtils.formatDisplayTime(task.dueTime)}',
-                                style: const TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                        ],
-                        Text(
-                          'Auto-snooze in ${alarmProvider.remainingSeconds}s',
-                          style: const TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                        const SizedBox(height: 24),
-                        // Actions: Mark Complete, Snooze, Dismiss
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                      ),
+                      color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+                      child: Padding(
+                        padding: const EdgeInsets.all(22.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                alarmProvider.markCompleted(taskProvider, habitProvider);
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.secondaryColor,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              icon: const Icon(Icons.check_circle_rounded),
-                              label: Text(
-                                isHabitAlarm ? 'Complete Habit & Keep Streak 🔥' : 'Mark Completed',
-                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
+                            // Header Icon & Category Badge
                             Row(
                               children: [
-                                if (!isHabitAlarm) ...[
-                                  Expanded(
-                                    child: OutlinedButton.icon(
-                                      onPressed: () {
-                                        _showSnoozePicker(context, alarmProvider, taskProvider);
-                                      },
-                                      style: OutlinedButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(vertical: 14),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(16),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: (isHabitAlarm ? AppTheme.secondaryColor : AppTheme.primaryColor).withOpacity(0.15),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    isHabitAlarm ? Icons.bolt_rounded : Icons.alarm_on_rounded,
+                                    size: 32,
+                                    color: isHabitAlarm ? AppTheme.secondaryColor : AppTheme.primaryColor,
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        isHabitAlarm ? 'DAILY HABIT ALARM ⚡' : 'TASK REMINDER ⏰',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 1.5,
+                                          color: isHabitAlarm ? AppTheme.secondaryColor : AppTheme.primaryColor,
                                         ),
                                       ),
-                                      icon: const Icon(Icons.snooze_rounded),
-                                      label: const Text('Snooze'),
-                                    ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Ringing now • Auto-snooze in ${alarmProvider.remainingSeconds}s',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 12),
-                                ],
-                                Expanded(
-                                  child: OutlinedButton.icon(
-                                    onPressed: () {
-                                      alarmProvider.dismiss(taskProvider: taskProvider);
-                                    },
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: AppTheme.priorityHigh,
-                                      padding: const EdgeInsets.symmetric(vertical: 14),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            const Divider(height: 1),
+                            const SizedBox(height: 16),
+
+                            // Main Title & Details
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                title,
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: isHabitAlarm ? (isDark ? Colors.white : Colors.black87) : priorityColor,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                description,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  height: 1.4,
+                                  color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 22),
+
+                            // Action Buttons Row: Complete, Snooze, Dismiss (Full Prominent Buttons)
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // Complete Button
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    alarmProvider.markCompleted(taskProvider, habitProvider);
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.secondaryColor,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    elevation: 2,
+                                  ),
+                                  icon: const Icon(Icons.check_circle_rounded, size: 20),
+                                  label: Text(
+                                    isHabitAlarm ? 'Complete Habit 🔥' : 'Mark Completed',
+                                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+
+                                // Snooze and Dismiss Buttons Side-by-Side
+                                Row(
+                                  children: [
+                                    if (!isHabitAlarm) ...[
+                                      Expanded(
+                                        child: ElevatedButton.icon(
+                                          onPressed: () {
+                                            _showSnoozePicker(context, alarmProvider, taskProvider);
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: AppTheme.accentColor,
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(vertical: 12),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(14),
+                                            ),
+                                          ),
+                                          icon: const Icon(Icons.snooze_rounded, size: 18),
+                                          label: const Text(
+                                            'Snooze',
+                                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                    ],
+                                    Expanded(
+                                      child: OutlinedButton.icon(
+                                        onPressed: () {
+                                          alarmProvider.dismiss(taskProvider: taskProvider);
+                                        },
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: AppTheme.priorityHigh,
+                                          side: const BorderSide(color: AppTheme.priorityHigh, width: 1.5),
+                                          padding: const EdgeInsets.symmetric(vertical: 12),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(14),
+                                          ),
+                                        ),
+                                        icon: const Icon(Icons.close_rounded, size: 18),
+                                        label: const Text(
+                                          'Dismiss',
+                                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                        ),
                                       ),
                                     ),
-                                    icon: const Icon(Icons.close_rounded),
-                                    label: const Text('Dismiss'),
-                                  ),
+                                  ],
                                 ),
                               ],
                             ),
                           ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -255,7 +277,7 @@ class _AlarmDialogOverlayState extends State<AlarmDialogOverlay>
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'Select Snooze Duration',
+              'Select Snooze Duration 💤',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
@@ -266,7 +288,7 @@ class _AlarmDialogOverlayState extends State<AlarmDialogOverlay>
               alignment: WrapAlignment.center,
               children: [5, 10, 15, 30, 60].map((mins) {
                 return ActionChip(
-                  label: Text('$mins min'),
+                  label: Text('$mins min', style: const TextStyle(fontWeight: FontWeight.bold)),
                   onPressed: () {
                     Navigator.pop(ctx);
                     alarmProvider.snooze(mins, taskProvider);

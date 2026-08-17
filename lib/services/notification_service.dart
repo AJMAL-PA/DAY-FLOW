@@ -36,7 +36,7 @@ class NotificationService {
     await _notificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse details) {
-        // Handle notification tap
+        // Handle notification response or action buttons
       },
     );
   }
@@ -70,7 +70,6 @@ class NotificationService {
     return true;
   }
 
-
   static Future<void> scheduleTaskReminder(Task task, Reminder reminder) async {
     try {
       final fireDateTime = DateTime.parse(reminder.fireAt);
@@ -79,9 +78,9 @@ class NotificationService {
       final int notificationId = (task.id + reminder.id).hashCode.abs() % 100000;
 
       const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-        'day_flow_alarms_v4',
+        'day_flow_screenoff_v10',
         'DAY FLOW Alarms & Reminders',
-        channelDescription: 'High priority full-screen alarms & lockscreen notifications',
+        channelDescription: 'High priority screen-off and lockscreen popup alarm notifications',
         importance: Importance.max,
         priority: Priority.max,
         playSound: true,
@@ -90,6 +89,24 @@ class NotificationService {
         category: AndroidNotificationCategory.alarm,
         visibility: NotificationVisibility.public,
         audioAttributesUsage: AudioAttributesUsage.alarm,
+        ticker: '⏰ DAY FLOW ALARM',
+        actions: [
+          AndroidNotificationAction(
+            'mark_complete',
+            'Mark Complete',
+            showsUserInterface: true,
+          ),
+          AndroidNotificationAction(
+            'snooze_15',
+            'Snooze 15m',
+            showsUserInterface: false,
+          ),
+          AndroidNotificationAction(
+            'dismiss',
+            'Dismiss',
+            showsUserInterface: false,
+          ),
+        ],
       );
 
       const NotificationDetails platformDetails = NotificationDetails(
@@ -125,9 +142,9 @@ class NotificationService {
       final int notificationId = ('habit_${habit.id}').hashCode.abs() % 100000;
 
       const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-        'day_flow_habits_v3',
-        'DAY FLOW Daily Habit Alarms',
-        channelDescription: 'High priority daily habit full-screen alarms & reminders',
+        'day_flow_habits_screenoff_v10',
+        'DAY FLOW Habit Alarms',
+        channelDescription: 'High priority daily habit screen-off popup alarm notifications',
         importance: Importance.max,
         priority: Priority.max,
         playSound: true,
@@ -136,9 +153,20 @@ class NotificationService {
         category: AndroidNotificationCategory.alarm,
         visibility: NotificationVisibility.public,
         audioAttributesUsage: AudioAttributesUsage.alarm,
+        ticker: '⚡ HABIT ALARM',
+        actions: [
+          AndroidNotificationAction(
+            'mark_complete',
+            'Mark Complete',
+            showsUserInterface: true,
+          ),
+          AndroidNotificationAction(
+            'dismiss',
+            'Dismiss',
+            showsUserInterface: false,
+          ),
+        ],
       );
-
-
 
       const NotificationDetails platformDetails = NotificationDetails(
         android: androidDetails,
